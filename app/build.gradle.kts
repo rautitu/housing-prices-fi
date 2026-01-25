@@ -9,7 +9,8 @@
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
     alias(libs.plugins.kotlin.jvm)
-
+    // Add the Kotlin serialization plugin
+    kotlin("plugin.serialization") version "2.2.21"
     // Apply the application plugin to add support for building a CLI application in Java.
     application
 }
@@ -22,6 +23,16 @@ repositories {
 dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
+
+    // Kotlin Serialization for JSON parsing
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+
+    // Kotlin standard library
+    implementation(kotlin("stdlib"))
+
+    // Testing
+    testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
 }
 
 testing {
