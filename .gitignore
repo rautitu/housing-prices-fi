@@ -33,3 +33,6 @@ build
 
 # Ignore Kotlin plugin data
 .kotlin
+
+# Statistics Finland data output that we might save locally for testing purposes 
+stat_fin_data_output/

@@ -34,7 +34,9 @@ class DatasetExtractor {
         apiUrl: String,
         format: String = "json-stat2"
     ): RawDataset {
-        val query = buildDefaultQuery(metadata, format)
+        //TODO replace with buildDefaultQuery after initial tests
+        val query = buildTestQuery(metadata, format)
+        //val query = buildDefaultQuery(metadata, format)
         return executeQuery(apiUrl, metadata, query, format)
     }
     
@@ -71,6 +73,47 @@ class DatasetExtractor {
         
         return PxWebQuery(
             query = selections,
+            response = ResponseFormat(format = format)
+        )
+    }
+
+    //TEMP method that mimics only parts of metadata for a certain API just to see that extracting this works
+    //wont make the final implementation
+    private fun buildTestQuery(metadata: DatasetMetadata, format: String = "json-stat"): PxWebQuery {
+        // Define the exact variable codes and values from your working query
+        val testSelections = listOf(
+            VariableSelection(
+                code = "Vuosi",
+                selection = Selection(
+                    filter = "item",
+                    values = listOf("2024")
+                )
+            ),
+            VariableSelection(
+                code = "Postinumero",
+                selection = Selection(
+                    filter = "item",
+                    values = listOf("00400")
+                )
+            ),
+            VariableSelection(
+                code = "Talotyyppi",
+                selection = Selection(
+                    filter = "item",
+                    values = listOf("1", "2", "3", "5") // All building types
+                )
+            ),
+            VariableSelection(
+                code = "Tiedot",
+                selection = Selection(
+                    filter = "item",
+                    values = listOf("keskihinta_aritm_nw", "lkm_julk20") // Both metrics
+                )
+            )
+        )
+        
+        return PxWebQuery(
+            query = testSelections,
             response = ResponseFormat(format = format)
         )
     }

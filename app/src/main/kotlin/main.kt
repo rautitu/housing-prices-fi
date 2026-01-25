@@ -22,10 +22,9 @@ fun main() {
         println("\nDataset Information:")
         println("Title: ${metadata.title}")
         println("Variables: ${metadata.variables.size}")
-        metadata.variables.forEach { variable ->
-            println("  - ${variable.text} (${variable.code}): ${variable.values.size} values")
-        }
-        return //TODO
+        //metadata.variables.forEach { variable ->
+        //    println("  - ${variable.text} (${variable.code}): ${variable.values.size} values")
+        //}
         
         // Extract the raw dataset
         println("\nExtracting dataset...")
@@ -35,8 +34,8 @@ fun main() {
         println("Format: ${rawDataset.format}")
         println("Data size: ${rawDataset.data.length} bytes")
         
-        //TODO Save to file (optional)
-        //saveToFile(rawDataset)
+        //TODO DELETE Save to file (optional)
+        saveToFile(rawDataset)
         
     } catch (e: Exception) {
         println("Error: ${e.message}")
@@ -44,14 +43,14 @@ fun main() {
     }
 }
 
+//TODO DELETE
+//temp method to save to file temporarily before we have a db
 fun saveToFile(dataset: model.RawDataset) {
+    val outputDir = java.io.File("stat_fin_data_output")
+    if (!outputDir.exists()) outputDir.mkdirs()
+    
     val filename = "dataset_${System.currentTimeMillis()}.${dataset.format}"
-    java.io.File(filename).writeText(dataset.data)
-    println("Saved to: $filename")
+    val file = java.io.File(outputDir, filename)
+    file.writeText(dataset.data)
+    println("Saved to: ${file.absolutePath}")
 }
-
-//TODO: remove this when I get the actual program to work
-//fun main() {
-//    println("Hello from Kotlin!")
-//    println("Java version: ${System.getProperty("java.version")}")
-//}
