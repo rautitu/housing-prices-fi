@@ -28,3 +28,6 @@ replay_pid*
 
 # Contains all your dependencies
 node_modules/
+
+#temp files produced during dev
+stat_fin_data_output/
