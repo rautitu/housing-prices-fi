@@ -23,11 +23,11 @@ export class DatasetTransformer {
     }
 
     testPrint(){
-        console.log("test prints begin")
-        console.log(this.targetTableName)
-        console.log(this.rawDataset.format)
-        console.log(this.rawDataset.metadata)
-        console.log(this.rawDataset.data)
-        console.log("test prints end")
+        this.logger.info("test prints begin")
+        this.logger.info(this.targetTableName)
+        this.logger.info(this.rawDataset.format)
+        this.logger.info(this.rawDataset.metadata)
+        this.logger.info(this.rawDataset.data)
+        this.logger.info("test prints end")
     }
 }
