@@ -19,7 +19,7 @@ async function main() {
 
   logger.info("PX-Web Dataset Extractor");
   logger.info("========================\n");
-  return
+  return //TODO remove
 
   const dataSource = new PxWebDatasetSource(datasetUrl);
   const extractor = new DatasetExtractor();
