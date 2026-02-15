@@ -1,0 +1,36 @@
+services:
+  # ── PostgreSQL ──
+  postgres:
+    image: postgres:17-alpine
+    container_name: hsp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-housing_prices}
+      POSTGRES_USER: ${POSTGRES_USER:-hsp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hsp_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hsp} -d ${POSTGRES_DB:-housing_prices}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Fetcher / Transformer pipeline ──
+  fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsp-fetcher
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-hsp}:${POSTGRES_PASSWORD:-hsp_dev_password}@postgres:5432/${POSTGRES_DB:-housing_prices}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+volumes:
+  postgres_data:
