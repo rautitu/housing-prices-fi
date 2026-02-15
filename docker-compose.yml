@@ -1,20 +1,22 @@
+## Base configuration — shared by all environments.
+## Use with an override file:
+##   docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up
+##   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+
 services:
   # ── PostgreSQL ──
   postgres:
     image: postgres:17-alpine
-    container_name: hsp-postgres
-    restart: unless-stopped
+    container_name: hsp-postgres-${ENV:-dev}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-housing_prices}
-      POSTGRES_USER: ${POSTGRES_USER:-hsp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hsp_dev_password}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata-${ENV:-dev}:/var/lib/postgresql/data
       - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hsp} -d ${POSTGRES_DB:-housing_prices}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -24,13 +26,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: hsp-fetcher
+    container_name: hsp-fetcher-${ENV:-dev}
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-hsp}:${POSTGRES_PASSWORD:-hsp_dev_password}@postgres:5432/${POSTGRES_DB:-housing_prices}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       LOG_LEVEL: ${LOG_LEVEL:-info}
 
 volumes:
-  postgres_data:
+  pgdata-dev:
+  pgdata-prod:
