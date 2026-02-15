@@ -2,26 +2,12 @@ import { createLogger } from '../utils/Logger.ts';
 
 import type {
     RawDataset,
-    BuildingType,
+    BuildingTypeCode,
+    BuildingTypeMapping,
     PriceRecord,
     TransformResult,
 } from '../model/Models.ts';
 import type { Logger } from 'pino';
-
-/**
- * Mapping from stat.fi building type codes to our domain enum.
- * Source codes (from statfin_ashi_pxt_13mu):
- *   1 = Blocks of flats, one-room flat
- *   2 = Blocks of flats, two-room flat
- *   3 = Blocks of flats, three-room flat+
- *   5 = Terraced houses total
- */
-const BUILDING_TYPE_MAP: Record<string, BuildingType> = {
-    '1': 'apartment_1r',
-    '2': 'apartment_2r',
-    '3': 'apartment_3r_plus',
-    '5': 'terraced',
-};
 
 /**
  * Known metric codes from the PxWeb dataset.
@@ -45,11 +31,30 @@ export class DatasetTransformer {
     private logger: Logger;
     private sourceName: string;
     private rawDataset: RawDataset;
+    private buildingTypeMap: Map<string, BuildingTypeCode>;
+    private buildingTypeMappings: BuildingTypeMapping[];
 
-    constructor(rawDataset: RawDataset, datasetName: string) {
+    /**
+     * @param rawDataset The raw json-stat2 dataset
+     * @param datasetName Source identifier (e.g. 'statfin_ashi_pxt_13mu')
+     * @param buildingTypeMappings Maps source codes to canonical types.
+     *        Each source provides its own mapping so different data sources
+     *        can map their codes/labels to the same canonical building types.
+     */
+    constructor(
+        rawDataset: RawDataset,
+        datasetName: string,
+        buildingTypeMappings: BuildingTypeMapping[]
+    ) {
         this.logger = createLogger('DatasetTransformer');
         this.rawDataset = rawDataset;
         this.sourceName = datasetName;
+        this.buildingTypeMappings = buildingTypeMappings;
+
+        // Build lookup: sourceCode → canonicalCode
+        this.buildingTypeMap = new Map(
+            buildingTypeMappings.map((m) => [m.sourceCode, m.canonicalCode])
+        );
     }
 
     /**
@@ -116,7 +121,7 @@ export class DatasetTransformer {
 
                 for (let ti = 0; ti < typeCodes.length; ti++) {
                     const typeCode = typeCodes[ti];
-                    const buildingType = BUILDING_TYPE_MAP[typeCode];
+                    const buildingType = this.buildingTypeMap.get(typeCode);
 
                     if (!buildingType) {
                         this.logger.warn(
@@ -166,7 +171,12 @@ export class DatasetTransformer {
             `Transformation complete: ${records.length} records, ${skipped} skipped`
         );
 
-        return { records, skipped, sourceName: this.sourceName };
+        return {
+            records,
+            skipped,
+            sourceName: this.sourceName,
+            buildingTypeMappings: this.buildingTypeMappings,
+        };
     }
 
     /**

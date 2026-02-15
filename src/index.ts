@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { DatasetExtractor } from "./extractor/DatasetExtractor.ts";
 import { DatasetTransformer } from "./transformer/DatasetTransformer.ts";
+import { STATFIN_BUILDING_TYPE_MAPPINGS } from "./transformer/StatfinBuildingTypes.ts";
 import { PxWebDatasetSource } from "./source/PxWebDatasetSource.ts";
 import type { DatasetMetadata, RawDataset } from "./model/Models.ts";
 import { createLogger } from './utils/Logger.ts';
@@ -34,7 +35,8 @@ async function main() {
     //step three: transform raw data into structured records
     const transformer: DatasetTransformer = new DatasetTransformer(
       rawDataset,
-      dataSource.datasetName
+      dataSource.datasetName,
+      STATFIN_BUILDING_TYPE_MAPPINGS
     )
     const result = transformer.transform();
     logger.info(`Transformed ${result.records.length} records, ${result.skipped} skipped`);
