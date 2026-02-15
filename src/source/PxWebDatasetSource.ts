@@ -9,15 +9,18 @@ import type { Logger } from 'pino';
  * Handles communication with Statistics Finland's PX-Web API
  */
 export class PxWebDatasetSource implements AsyncDatasetSource {
-    private datasetUrl: string;
+    datasetUrl: string;
+    datasetName: string;
     private logger: Logger;
 
     constructor(datasetUrl: string) {
         this.datasetUrl = datasetUrl;
+        this.datasetName = this.extractTableName(datasetUrl);
         this.logger = createLogger('PxWebDatasetSource');
     }
 
     async fetchMetadata(): Promise<DatasetMetadata> {
+        this.logger.info(`Fetching metadata from: ${this.datasetUrl}`);
         const apiUrl = this.convertToApiUrl(this.datasetUrl);
 
         const response = await fetch(apiUrl, {
@@ -35,7 +38,11 @@ export class PxWebDatasetSource implements AsyncDatasetSource {
         }
 
         const body = await response.text();
-        return this.parseMetadata(body);
+        let parsedMetadata: DatasetMetadata = this.parseMetadata(body);
+        this.logger.info("Metadata fetch done. Metadata information:");
+        this.logger.info(`Title: ${parsedMetadata.title}`);
+        this.logger.info(`Variables: ${parsedMetadata.variables.length}`);
+        return parsedMetadata;
     }
 
     getUrl(): string {
@@ -105,4 +112,17 @@ export class PxWebDatasetSource implements AsyncDatasetSource {
             time
         };
     }
+
+    private extractTableName(url: string): string {
+        let pxPos = url.lastIndexOf(".px");
+        let lastSlashPos = url.lastIndexOf("/", pxPos - 1);
+        if (pxPos === -1 || lastSlashPos === -1) {
+            let err: string = `Failed to find slash OR .px in the given URL, only valid URLs ending with .px are required. URL that was used: ${url}`;
+            this.logger.error(err);
+            throw new Error(err);
+        }
+        
+        return url.substring(lastSlashPos + 1, pxPos);
+    }
+
 }
