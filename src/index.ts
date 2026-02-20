@@ -7,7 +7,8 @@ import { DatasetExtractor } from "./extractor/DatasetExtractor.ts";
 import { DatasetTransformer } from "./transformer/DatasetTransformer.ts";
 import { STATFIN_BUILDING_TYPE_MAPPINGS } from "./transformer/StatfinBuildingTypes.ts";
 import { PxWebDatasetSource } from "./source/PxWebDatasetSource.ts";
-import type { DatasetMetadata, RawDataset, TransformResult } from "./model/Models.ts";
+import { PKS_POSTAL_CODES, DEFAULT_YEARS } from "./config/postalCodes.ts";
+import type { DatasetMetadata, RawDataset, TransformResult, QueryConfig, PriceRecord } from "./model/Models.ts";
 import { createLogger } from './utils/Logger.ts';
 
 //central logger init
@@ -24,33 +25,56 @@ async function main() {
   const dataSource: PxWebDatasetSource = new PxWebDatasetSource(datasetUrl);
   const extractor: DatasetExtractor = new DatasetExtractor();
 
+  const queryConfig: QueryConfig = {
+    postalCodes: PKS_POSTAL_CODES,
+    years: DEFAULT_YEARS,
+  };
+
   try {
-    //step one: get metadata
+    // Step 1: get metadata
     const metadata: DatasetMetadata = await dataSource.fetchMetadata();
-    //step two: extract actual data
-    const rawDataset = await extractor.extract(
+
+    // Step 2: extract data in batches
+    const batches: RawDataset[] = await extractor.extractBatched(
       metadata,
-      dataSource.getUrl()
+      dataSource.getUrl(),
+      queryConfig
     );
-    //step three: transform raw data into structured records
-    const transformer: DatasetTransformer = new DatasetTransformer(
-      rawDataset,
-      dataSource.datasetName,
-      STATFIN_BUILDING_TYPE_MAPPINGS
-    )
-    const result = transformer.transform();
-    logger.info(`Transformed ${result.records.length} records, ${result.skipped} skipped`);
+
+    // Step 3: transform each batch and merge results
+    let allRecords: PriceRecord[] = [];
+    let totalSkipped = 0;
+
+    for (const rawDataset of batches) {
+      const transformer: DatasetTransformer = new DatasetTransformer(
+        rawDataset,
+        dataSource.datasetName,
+        STATFIN_BUILDING_TYPE_MAPPINGS
+      );
+      const result = transformer.transform();
+      allRecords = allRecords.concat(result.records);
+      totalSkipped += result.skipped;
+    }
+
+    const mergedResult: TransformResult = {
+      records: allRecords,
+      skipped: totalSkipped,
+      sourceName: dataSource.datasetName,
+      buildingTypeMappings: STATFIN_BUILDING_TYPE_MAPPINGS,
+    };
+
+    logger.info(`Total: ${mergedResult.records.length} records, ${mergedResult.skipped} skipped from ${batches.length} batches`);
 
     // Preview output
-    prettyPrintResults(result);
+    prettyPrintResults(mergedResult);
 
-    // Step four: store to database (if DATABASE_URL is set)
+    // Step 4: store to database (if DATABASE_URL is set)
     if (process.env.DATABASE_URL) {
       const { DatabaseClient } = await import("./db/DatabaseClient.ts");
       const db = new DatabaseClient();
       try {
         const { sourceId, recordsStored } = await db.storeTransformResult(
-          result,
+          mergedResult,
           'Statistics Finland - prices of old dwellings in housing companies',
           datasetUrl
         );

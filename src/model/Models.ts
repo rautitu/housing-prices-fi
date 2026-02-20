@@ -61,6 +61,19 @@ export interface ResponseFormat {
     format: string;
 }
 
+// ── Query configuration ──
+
+/**
+ * Configuration for what data to fetch from the API.
+ * Allows flexible selection of postal codes, years, building types, and metrics.
+ */
+export interface QueryConfig {
+    postalCodes: string[];
+    years: string[];
+    buildingTypes?: string[];   // defaults to all types
+    metrics?: string[];         // defaults to price + transaction count
+}
+
 // ── Transformer output models ──
 
 /**
