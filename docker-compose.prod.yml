@@ -25,3 +25,12 @@ services:
       resources:
         limits:
           memory: 256M
+
+  frontend:
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-51200}:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 128M

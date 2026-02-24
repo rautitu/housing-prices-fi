@@ -17,7 +17,7 @@ services:
   frontend:
     restart: "no"
     ports:
-      - "${FRONTEND_PORT:-8080}:8080"
+      - "${FRONTEND_PORT:-51100}:8080"
 
   api:
     restart: "no"
