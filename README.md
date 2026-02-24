@@ -1,4 +1,4 @@
-# Housing Prices FI 🇫🇮
+# Housing Prices FI
 
 Asuntojen neliöhinnat Suomessa postinumeroittain — interaktiivinen karttavisualisointi.
 
