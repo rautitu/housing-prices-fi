@@ -130,10 +130,15 @@ export default function App() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geojson && (
+        {geojson && prices.size > 0 && (
           <GeoJSON
             key={`${selectedYear}-${selectedType}`}
-            data={geojson}
+            data={{
+              type: 'FeatureCollection',
+              features: geojson.features.filter(f =>
+                prices.has(f.properties?.postalCode)
+              ),
+            } as FeatureCollection}
             style={style}
             onEachFeature={onEachFeature}
           />
