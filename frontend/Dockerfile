@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 COPY . .
-ARG VITE_API_BASE=http://localhost:51000
+ARG VITE_API_BASE=
 ENV VITE_API_BASE=${VITE_API_BASE}
 RUN bun run build
 
