@@ -62,6 +62,7 @@ export default function App() {
   }, []);
 
   // Load prices when year or building type changes
+  const [pricesKey, setPricesKey] = useState(0);
   useEffect(() => {
     if (selectedYear === null) return;
     fetch(`${API_BASE}/api/prices?year=${selectedYear}&building_type=${selectedType}`)
@@ -70,6 +71,7 @@ export default function App() {
         const map = new Map<string, PriceRow>();
         rows.forEach(r => map.set(r.postalCode, r));
         setPrices(map);
+        setPricesKey(k => k + 1);
       });
   }, [selectedYear, selectedType]);
 
@@ -132,7 +134,7 @@ export default function App() {
         />
         {geojson && prices.size > 0 && (
           <GeoJSON
-            key={`${selectedYear}-${selectedType}`}
+            key={`${selectedYear}-${selectedType}-${pricesKey}`}
             data={{
               type: 'FeatureCollection',
               features: geojson.features.filter(f =>
