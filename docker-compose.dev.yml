@@ -17,7 +17,7 @@ services:
   api:
     restart: "no"
     ports:
-      - "${API_PORT:-3000}:3000"
+      - "${API_PORT:-51000}:51000"
     environment:
       LOG_LEVEL: debug
     volumes:
