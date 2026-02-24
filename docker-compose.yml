@@ -61,7 +61,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      API_PORT: "3000"
+      API_PORT: "51000"
       LOG_LEVEL: ${LOG_LEVEL:-info}
     command: ["bun", "run", "src/api/server.ts"]
 
