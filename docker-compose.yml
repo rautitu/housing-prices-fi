@@ -61,9 +61,20 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      API_PORT: "3000"
+      API_PORT: "51000"
       LOG_LEVEL: ${LOG_LEVEL:-info}
     command: ["bun", "run", "src/api/server.ts"]
+
+  # ── Frontend (Nginx + Vite build) ──
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-}
+    container_name: hsp-frontend-${ENV:-dev}
+    depends_on:
+      - api
 
 volumes:
   pgdata-dev:

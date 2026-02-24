@@ -5,7 +5,7 @@ import { getBuildingTypes } from './routes/buildingTypes.ts';
 import { getGeometries } from './routes/geometries.ts';
 
 const logger = createLogger('API');
-const PORT = parseInt(process.env.API_PORT ?? '3000', 10);
+const PORT = parseInt(process.env.API_PORT ?? '51000', 10);
 
 /**
  * Housing Prices FI — Backend API

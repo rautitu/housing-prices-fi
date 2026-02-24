@@ -65,7 +65,7 @@ export async function getPrices(url: URL): Promise<Response> {
         municipality: r.municipality,
         pricePerSqm: r.price_per_sqm ? Number(r.price_per_sqm) : null,
         prevPricePerSqm: r.prev_price_per_sqm ? Number(r.prev_price_per_sqm) : null,
-        changePercent: r.change_percent ? Number(r.change_percent) : null,
+        changePercent: r.change_percent != null ? Number(r.change_percent) : null,
     }));
 
     return Response.json(result);
