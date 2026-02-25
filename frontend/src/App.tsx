@@ -23,6 +23,11 @@ interface BuildingType {
   description_fi: string;
 }
 
+interface Municipality {
+  name: string;
+  postalCodeCount: number;
+}
+
 function FitBounds({ geojson }: { geojson: FeatureCollection }) {
   const map = useMap();
   useEffect(() => {
@@ -54,32 +59,41 @@ function getColor(changePercent: number | null): string {
 export default function App() {
   const [years, setYears] = useState<number[]>([]);
   const [buildingTypes, setBuildingTypes] = useState<BuildingType[]>([]);
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState('all');
+  const [selectedMunicipality, setSelectedMunicipality] = useState('Helsinki');
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [prices, setPrices] = useState<Map<string, PriceRow>>(new Map());
   const [loading, setLoading] = useState(true);
 
-  // Load years, building types, geometries on mount
+  // Load years, building types, municipalities, geometries on mount
   useEffect(() => {
     Promise.all([
       fetch(`${API_BASE}/api/years`).then(r => r.json()),
       fetch(`${API_BASE}/api/building-types`).then(r => r.json()),
+      fetch(`${API_BASE}/api/municipalities`).then(r => r.json()),
       fetch(`${API_BASE}/api/geometries`).then(r => r.json()),
-    ]).then(([yrs, types, geo]) => {
+    ]).then(([yrs, types, munis, geo]) => {
       setYears(yrs);
       setBuildingTypes(types);
+      setMunicipalities(munis);
       setGeojson(geo);
       if (yrs.length > 0) setSelectedYear(yrs[yrs.length - 1]);
       setLoading(false);
     });
   }, []);
 
-  // Load prices when year or building type changes
+  // Load prices when year, building type, or municipality changes
   const [pricesKey, setPricesKey] = useState(0);
   useEffect(() => {
     if (selectedYear === null) return;
-    fetch(`${API_BASE}/api/prices?year=${selectedYear}&building_type=${selectedType}`)
+    const params = new URLSearchParams({
+      year: String(selectedYear),
+      building_type: selectedType,
+      municipality: selectedMunicipality,
+    });
+    fetch(`${API_BASE}/api/prices?${params}`)
       .then(r => r.json())
       .then((rows: PriceRow[]) => {
         const map = new Map<string, PriceRow>();
@@ -87,7 +101,7 @@ export default function App() {
         setPrices(map);
         setPricesKey(k => k + 1);
       });
-  }, [selectedYear, selectedType]);
+  }, [selectedYear, selectedType, selectedMunicipality]);
 
   const style = (feature: Feature | undefined): PathOptions => {
     const code = feature?.properties?.postalCode;
@@ -119,6 +133,14 @@ export default function App() {
       <div className="controls">
         <h1>Asuntojen neliöhinnat</h1>
         <div className="selectors">
+          <label>
+            Kunta
+            <select value={selectedMunicipality} onChange={e => setSelectedMunicipality(e.target.value)}>
+              {municipalities.map(m => (
+                <option key={m.name} value={m.name}>{m.name}</option>
+              ))}
+            </select>
+          </label>
           <label>
             Vuosi
             <select value={selectedYear ?? ''} onChange={e => setSelectedYear(Number(e.target.value))}>
@@ -157,7 +179,7 @@ export default function App() {
             <>
               <FitBounds geojson={filteredData} />
               <GeoJSON
-                key={`${selectedYear}-${selectedType}-${pricesKey}`}
+                key={`${selectedYear}-${selectedType}-${selectedMunicipality}-${pricesKey}`}
                 data={filteredData}
                 style={style}
                 onEachFeature={onEachFeature}

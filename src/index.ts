@@ -7,7 +7,7 @@ import { DatasetExtractor } from "./extractor/DatasetExtractor.ts";
 import { DatasetTransformer } from "./transformer/DatasetTransformer.ts";
 import { STATFIN_BUILDING_TYPE_MAPPINGS } from "./transformer/StatfinBuildingTypes.ts";
 import { PxWebDatasetSource } from "./source/PxWebDatasetSource.ts";
-import { PKS_POSTAL_CODES, DEFAULT_YEARS } from "./config/postalCodes.ts";
+import { ALL_POSTAL_CODES, DEFAULT_YEARS } from "./config/postalCodes.ts";
 import type { DatasetMetadata, RawDataset, TransformResult, QueryConfig, PriceRecord } from "./model/Models.ts";
 import { createLogger } from './utils/Logger.ts';
 
@@ -26,7 +26,7 @@ async function main() {
   const extractor: DatasetExtractor = new DatasetExtractor();
 
   const queryConfig: QueryConfig = {
-    postalCodes: PKS_POSTAL_CODES,
+    postalCodes: ALL_POSTAL_CODES,
     years: DEFAULT_YEARS,
   };
 
