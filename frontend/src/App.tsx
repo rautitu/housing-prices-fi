@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import type { FeatureCollection, Feature } from 'geojson';
 import type { Layer, PathOptions } from 'leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 
@@ -20,6 +21,19 @@ interface BuildingType {
   code: string;
   description: string;
   description_fi: string;
+}
+
+function FitBounds({ geojson }: { geojson: FeatureCollection }) {
+  const map = useMap();
+  useEffect(() => {
+    if (geojson.features.length === 0) return;
+    const layer = L.geoJSON(geojson);
+    const bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }, [geojson, map]);
+  return null;
 }
 
 function getColor(changePercent: number | null): string {
@@ -132,19 +146,25 @@ export default function App() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geojson && prices.size > 0 && (
-          <GeoJSON
-            key={`${selectedYear}-${selectedType}-${pricesKey}`}
-            data={{
-              type: 'FeatureCollection',
-              features: geojson.features.filter(f =>
-                prices.has(f.properties?.postalCode)
-              ),
-            } as FeatureCollection}
-            style={style}
-            onEachFeature={onEachFeature}
-          />
-        )}
+        {geojson && prices.size > 0 && (() => {
+          const filteredData: FeatureCollection = {
+            type: 'FeatureCollection',
+            features: geojson.features.filter(f =>
+              prices.has(f.properties?.postalCode)
+            ),
+          };
+          return (
+            <>
+              <FitBounds geojson={filteredData} />
+              <GeoJSON
+                key={`${selectedYear}-${selectedType}-${pricesKey}`}
+                data={filteredData}
+                style={style}
+                onEachFeature={onEachFeature}
+              />
+            </>
+          );
+        })()}
       </MapContainer>
     </div>
   );
