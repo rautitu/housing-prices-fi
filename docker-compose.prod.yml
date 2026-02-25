@@ -1,4 +1,4 @@
-## Prod overrides — HTTPS via Caddy, no direct port exposure for app services.
+## Prod overrides — external Caddy proxy handles HTTPS.
 ## Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 
 services:
@@ -18,7 +18,6 @@ services:
 
   api:
     restart: unless-stopped
-    # No ports exposed — Caddy → frontend nginx → api (via /api/ proxy)
     deploy:
       resources:
         limits:
@@ -26,33 +25,9 @@ services:
 
   frontend:
     restart: unless-stopped
-    # No ports exposed — Caddy handles external traffic
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: hsp-caddy-${ENV:-prod}
-    restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"  # HTTP/3
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - frontend
+      - "${FRONTEND_PORT:-51100}:8080"  # External Caddy proxy routes here
     deploy:
       resources:
         limits:
           memory: 128M
-
-volumes:
-  caddy_data:
-  caddy_config:
