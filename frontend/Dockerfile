@@ -10,6 +10,8 @@ RUN bun run build
 
 # ── Serve stage ──
 FROM nginx:alpine
-COPY --from=build --chmod=644 /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
+RUN find /usr/share/nginx/html -type d -exec chmod 755 {} + && \
+    find /usr/share/nginx/html -type f -exec chmod 644 {} +
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080
