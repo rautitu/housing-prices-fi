@@ -1,14 +1,17 @@
 import { sql } from '../db.ts';
+import { MUNICIPALITY_POSTAL_CODES } from '../../config/postalCodes.ts';
 
 /**
- * GET /api/prices?year=2024&building_type=all
+ * GET /api/prices?year=2024&building_type=all&municipality=Helsinki
  *
  * Returns per-postal-code prices for the given year and building type,
  * including the previous year's price and year-over-year change percentage.
+ * Optional municipality filter limits results to that municipality's postal codes.
  */
 export async function getPrices(url: URL): Promise<Response> {
     const yearParam = url.searchParams.get('year');
     const buildingType = url.searchParams.get('building_type') ?? 'all';
+    const municipality = url.searchParams.get('municipality');
 
     if (!yearParam) {
         return Response.json({ error: 'year parameter is required' }, { status: 400 });
@@ -19,6 +22,15 @@ export async function getPrices(url: URL): Promise<Response> {
         return Response.json({ error: 'year must be a number' }, { status: 400 });
     }
 
+    // Resolve postal codes for municipality filter
+    const postalCodeFilter = municipality
+        ? MUNICIPALITY_POSTAL_CODES[municipality] ?? null
+        : null;
+
+    if (municipality && !postalCodeFilter) {
+        return Response.json({ error: `Unknown municipality: ${municipality}` }, { status: 400 });
+    }
+
     const prevYear = year - 1;
     const currentDate = `${year}-01-01`;
     const prevDate = `${prevYear}-01-01`;
@@ -27,78 +39,156 @@ export async function getPrices(url: URL): Promise<Response> {
     const isAll = buildingType === 'all';
 
     const rows = isAll
-        ? await sql`
-            WITH current AS (
+        ? postalCodeFilter
+            ? await sql`
+                WITH current AS (
+                    SELECT
+                        pd.postal_code,
+                        pc.name,
+                        pc.municipality,
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                    FROM price_data pd
+                    LEFT JOIN postal_code pc ON pc.code = pd.postal_code
+                    WHERE pd.date = ${currentDate}
+                      AND pd.price_per_sqm IS NOT NULL
+                      AND pd.postal_code = ANY(${postalCodeFilter})
+                    GROUP BY pd.postal_code, pc.name, pc.municipality
+                ),
+                previous AS (
+                    SELECT
+                        pd.postal_code,
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                    FROM price_data pd
+                    WHERE pd.date = ${prevDate}
+                      AND pd.price_per_sqm IS NOT NULL
+                      AND pd.postal_code = ANY(${postalCodeFilter})
+                    GROUP BY pd.postal_code
+                )
                 SELECT
-                    pd.postal_code,
-                    pc.name,
-                    pc.municipality,
-                    ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
-                FROM price_data pd
-                LEFT JOIN postal_code pc ON pc.code = pd.postal_code
-                WHERE pd.date = ${currentDate}
-                  AND pd.price_per_sqm IS NOT NULL
-                GROUP BY pd.postal_code, pc.name, pc.municipality
-            ),
-            previous AS (
+                    c.postal_code,
+                    c.name,
+                    c.municipality,
+                    c.price_per_sqm,
+                    p.price_per_sqm AS prev_price_per_sqm,
+                    CASE
+                        WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
+                        THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
+                        ELSE NULL
+                    END AS change_percent
+                FROM current c
+                LEFT JOIN previous p ON p.postal_code = c.postal_code
+                ORDER BY c.postal_code
+            `
+            : await sql`
+                WITH current AS (
+                    SELECT
+                        pd.postal_code,
+                        pc.name,
+                        pc.municipality,
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                    FROM price_data pd
+                    LEFT JOIN postal_code pc ON pc.code = pd.postal_code
+                    WHERE pd.date = ${currentDate}
+                      AND pd.price_per_sqm IS NOT NULL
+                    GROUP BY pd.postal_code, pc.name, pc.municipality
+                ),
+                previous AS (
+                    SELECT
+                        pd.postal_code,
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                    FROM price_data pd
+                    WHERE pd.date = ${prevDate}
+                      AND pd.price_per_sqm IS NOT NULL
+                    GROUP BY pd.postal_code
+                )
                 SELECT
-                    pd.postal_code,
-                    ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
-                FROM price_data pd
-                WHERE pd.date = ${prevDate}
-                  AND pd.price_per_sqm IS NOT NULL
-                GROUP BY pd.postal_code
-            )
-            SELECT
-                c.postal_code,
-                c.name,
-                c.municipality,
-                c.price_per_sqm,
-                p.price_per_sqm AS prev_price_per_sqm,
-                CASE
-                    WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
-                    THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
-                    ELSE NULL
-                END AS change_percent
-            FROM current c
-            LEFT JOIN previous p ON p.postal_code = c.postal_code
-            ORDER BY c.postal_code
-        `
-        : await sql`
-            WITH current AS (
+                    c.postal_code,
+                    c.name,
+                    c.municipality,
+                    c.price_per_sqm,
+                    p.price_per_sqm AS prev_price_per_sqm,
+                    CASE
+                        WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
+                        THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
+                        ELSE NULL
+                    END AS change_percent
+                FROM current c
+                LEFT JOIN previous p ON p.postal_code = c.postal_code
+                ORDER BY c.postal_code
+            `
+        : postalCodeFilter
+            ? await sql`
+                WITH current AS (
+                    SELECT
+                        pd.postal_code,
+                        pc.name,
+                        pc.municipality,
+                        pd.price_per_sqm
+                    FROM price_data pd
+                    LEFT JOIN postal_code pc ON pc.code = pd.postal_code
+                    WHERE pd.date = ${currentDate}
+                      AND pd.building_type = ${buildingType}
+                      AND pd.postal_code = ANY(${postalCodeFilter})
+                ),
+                previous AS (
+                    SELECT
+                        pd.postal_code,
+                        pd.price_per_sqm
+                    FROM price_data pd
+                    WHERE pd.date = ${prevDate}
+                      AND pd.building_type = ${buildingType}
+                      AND pd.postal_code = ANY(${postalCodeFilter})
+                )
                 SELECT
-                    pd.postal_code,
-                    pc.name,
-                    pc.municipality,
-                    pd.price_per_sqm
-                FROM price_data pd
-                LEFT JOIN postal_code pc ON pc.code = pd.postal_code
-                WHERE pd.date = ${currentDate}
-                  AND pd.building_type = ${buildingType}
-            ),
-            previous AS (
+                    c.postal_code,
+                    c.name,
+                    c.municipality,
+                    c.price_per_sqm,
+                    p.price_per_sqm AS prev_price_per_sqm,
+                    CASE
+                        WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
+                        THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
+                        ELSE NULL
+                    END AS change_percent
+                FROM current c
+                LEFT JOIN previous p ON p.postal_code = c.postal_code
+                ORDER BY c.postal_code
+            `
+            : await sql`
+                WITH current AS (
+                    SELECT
+                        pd.postal_code,
+                        pc.name,
+                        pc.municipality,
+                        pd.price_per_sqm
+                    FROM price_data pd
+                    LEFT JOIN postal_code pc ON pc.code = pd.postal_code
+                    WHERE pd.date = ${currentDate}
+                      AND pd.building_type = ${buildingType}
+                ),
+                previous AS (
+                    SELECT
+                        pd.postal_code,
+                        pd.price_per_sqm
+                    FROM price_data pd
+                    WHERE pd.date = ${prevDate}
+                      AND pd.building_type = ${buildingType}
+                )
                 SELECT
-                    pd.postal_code,
-                    pd.price_per_sqm
-                FROM price_data pd
-                WHERE pd.date = ${prevDate}
-                  AND pd.building_type = ${buildingType}
-            )
-            SELECT
-                c.postal_code,
-                c.name,
-                c.municipality,
-                c.price_per_sqm,
-                p.price_per_sqm AS prev_price_per_sqm,
-                CASE
-                    WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
-                    THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
-                    ELSE NULL
-                END AS change_percent
-            FROM current c
-            LEFT JOIN previous p ON p.postal_code = c.postal_code
-            ORDER BY c.postal_code
-        `;
+                    c.postal_code,
+                    c.name,
+                    c.municipality,
+                    c.price_per_sqm,
+                    p.price_per_sqm AS prev_price_per_sqm,
+                    CASE
+                        WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
+                        THEN ROUND(((c.price_per_sqm - p.price_per_sqm) / p.price_per_sqm * 100)::numeric, 2)
+                        ELSE NULL
+                    END AS change_percent
+                FROM current c
+                LEFT JOIN previous p ON p.postal_code = c.postal_code
+                ORDER BY c.postal_code
+            `;
 
     const result = rows.map((r) => ({
         postalCode: r.postal_code,
