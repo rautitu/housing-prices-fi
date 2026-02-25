@@ -93,8 +93,24 @@ export const PKS_POSTAL_CODES: string[] = [
     ...VANTAA_POSTAL_CODES,
 ];
 
-/** Default years to fetch */
-export const DEFAULT_YEARS: string[] = ['2020', '2021', '2022', '2023', '2024', '2025'];
+/** Starting year for data fetch */
+export const FETCH_START_YEAR = 2018;
+
+/**
+ * Generate year range from FETCH_START_YEAR to current year (inclusive).
+ * Years not available in the API will be filtered out by the extractor's validateConfig.
+ */
+export function generateYearRange(): string[] {
+    const currentYear = new Date().getFullYear();
+    const years: string[] = [];
+    for (let y = FETCH_START_YEAR; y <= currentYear; y++) {
+        years.push(String(y));
+    }
+    return years;
+}
+
+/** Default years to fetch (2018 → current year) */
+export const DEFAULT_YEARS: string[] = generateYearRange();
 
 /** Default building type codes from stat.fi */
 export const DEFAULT_BUILDING_TYPES: string[] = ['1', '2', '3', '5'];
