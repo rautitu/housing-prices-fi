@@ -15,6 +15,7 @@ interface PriceRow {
   pricePerSqm: number | null;
   prevPricePerSqm: number | null;
   changePercent: number | null;
+  transactionCount: number | null;
 }
 
 interface BuildingType {
@@ -123,7 +124,8 @@ export default function App() {
     const change = row?.changePercent !== null && row?.changePercent !== undefined
       ? `${row.changePercent > 0 ? '+' : ''}${row.changePercent}%`
       : '';
-    layer.bindTooltip(`<b>${code} ${name}</b><br/>${price} ${change}`, { sticky: true });
+    const txCount = row?.transactionCount ? `<br/>Kauppoja: ${row.transactionCount}` : '';
+    layer.bindTooltip(`<b>${code} ${name}</b><br/>${price} ${change}${txCount}`, { sticky: true });
   };
 
   if (loading) return <div className="loading">Ladataan...</div>;

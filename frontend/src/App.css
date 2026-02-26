@@ -25,6 +25,43 @@
 .selectors {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .controls {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .controls h1 {
+    font-size: 1rem;
+    width: 100%;
+  }
+
+  .selectors {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .selectors label {
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .selectors select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .legend {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
 }
 
 .selectors label {
