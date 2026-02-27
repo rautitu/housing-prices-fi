@@ -46,7 +46,8 @@ export async function getPrices(url: URL): Promise<Response> {
                         pd.postal_code,
                         pc.name,
                         pc.municipality,
-                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm,
+                        SUM(pd.transaction_count) AS transaction_count
                     FROM price_data pd
                     LEFT JOIN postal_code pc ON pc.code = pd.postal_code
                     WHERE pd.date = ${currentDate}
@@ -69,6 +70,7 @@ export async function getPrices(url: URL): Promise<Response> {
                     c.name,
                     c.municipality,
                     c.price_per_sqm,
+                    c.transaction_count,
                     p.price_per_sqm AS prev_price_per_sqm,
                     CASE
                         WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
@@ -85,7 +87,8 @@ export async function getPrices(url: URL): Promise<Response> {
                         pd.postal_code,
                         pc.name,
                         pc.municipality,
-                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm
+                        ROUND(AVG(pd.price_per_sqm)::numeric, 2) AS price_per_sqm,
+                        SUM(pd.transaction_count) AS transaction_count
                     FROM price_data pd
                     LEFT JOIN postal_code pc ON pc.code = pd.postal_code
                     WHERE pd.date = ${currentDate}
@@ -106,6 +109,7 @@ export async function getPrices(url: URL): Promise<Response> {
                     c.name,
                     c.municipality,
                     c.price_per_sqm,
+                    c.transaction_count,
                     p.price_per_sqm AS prev_price_per_sqm,
                     CASE
                         WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
@@ -123,7 +127,8 @@ export async function getPrices(url: URL): Promise<Response> {
                         pd.postal_code,
                         pc.name,
                         pc.municipality,
-                        pd.price_per_sqm
+                        pd.price_per_sqm,
+                        pd.transaction_count
                     FROM price_data pd
                     LEFT JOIN postal_code pc ON pc.code = pd.postal_code
                     WHERE pd.date = ${currentDate}
@@ -144,6 +149,7 @@ export async function getPrices(url: URL): Promise<Response> {
                     c.name,
                     c.municipality,
                     c.price_per_sqm,
+                    c.transaction_count,
                     p.price_per_sqm AS prev_price_per_sqm,
                     CASE
                         WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
@@ -160,7 +166,8 @@ export async function getPrices(url: URL): Promise<Response> {
                         pd.postal_code,
                         pc.name,
                         pc.municipality,
-                        pd.price_per_sqm
+                        pd.price_per_sqm,
+                        pd.transaction_count
                     FROM price_data pd
                     LEFT JOIN postal_code pc ON pc.code = pd.postal_code
                     WHERE pd.date = ${currentDate}
@@ -179,6 +186,7 @@ export async function getPrices(url: URL): Promise<Response> {
                     c.name,
                     c.municipality,
                     c.price_per_sqm,
+                    c.transaction_count,
                     p.price_per_sqm AS prev_price_per_sqm,
                     CASE
                         WHEN p.price_per_sqm IS NOT NULL AND p.price_per_sqm > 0 AND c.price_per_sqm IS NOT NULL
@@ -197,6 +205,7 @@ export async function getPrices(url: URL): Promise<Response> {
         pricePerSqm: r.price_per_sqm ? Number(r.price_per_sqm) : null,
         prevPricePerSqm: r.prev_price_per_sqm ? Number(r.prev_price_per_sqm) : null,
         changePercent: r.change_percent != null ? Number(r.change_percent) : null,
+        transactionCount: r.transaction_count != null ? Number(r.transaction_count) : null,
     }));
 
     return Response.json(result);
