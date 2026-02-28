@@ -1,99 +1,99 @@
 # Housing Prices FI
 
-Asuntojen neliöhinnat Suomessa postinumeroittain — interaktiivinen karttavisualisointi.
+Housing prices per square meter in Finland by postal code — interactive map visualization.
 
-Data: [Tilastokeskus / stat.fi](https://stat.fi) (PxWeb API)
+Data: [Statistics Finland / stat.fi](https://stat.fi) (PxWeb API)
 
-## Arkkitehtuuri
+## Architecture
 
 ```
-stat.fi PxWeb API → Fetcher → Transformer → PostgreSQL
-                                                ↓
-                              Frontend (React + Leaflet) ← API (Bun)
+stat.fi PxWeb API -> Fetcher -> Transformer -> PostgreSQL
+                                                 |
+                               Frontend (React + Leaflet) <- API (Bun)
 ```
 
-| Palvelu    | Kuvaus                                    | Portti (dev) |
-|------------|-------------------------------------------|-------------|
-| postgres   | PostgreSQL 17                              | 5433        |
-| api        | Bun REST API                               | 51000       |
-| frontend   | React + Leaflet (Nginx)                    | 51100       |
-| fetcher    | Hintatietojen haku + transformointi         | —           |
-| geo-fetch  | Postinumerogeometriat Tilastokeskuksesta    | —           |
+| Service    | Description                                | Port (dev) |
+|------------|-------------------------------------------|------------|
+| postgres   | PostgreSQL 17                              | 5433       |
+| api        | Bun REST API                               | 51000      |
+| frontend   | React + Leaflet (Nginx)                    | 51100      |
+| fetcher    | Price data fetching + transformation       | —          |
+| geo-fetch  | Postal code geometries from Statistics Finland | —      |
 
-## Vaatimukset
+## Requirements
 
 - Docker & Docker Compose v2
 - GNU Make
-- (Testeihin: [Bun](https://bun.sh))
+- (For tests: [Bun](https://bun.sh))
 
-## Pikastart (dev)
+## Quick Start (dev)
 
 ```bash
-# 1. Kloonaa
+# 1. Clone
 git clone https://github.com/rautitu/housing-prices-fi.git
 cd housing-prices-fi
 
-# 2. Käynnistä kaikki palvelut
+# 2. Start all services
 make dev-up
 
-# 3. Hae data (ensimmäisellä kerralla)
+# 3. Fetch data (first time)
 make dev-fetch
 make dev-geo
 
-# 4. Avaa selaimessa
+# 4. Open in browser
 open http://localhost:51100
 ```
 
-## Makefile-komennot
+## Makefile Commands
 
-| Komento         | Kuvaus                                       |
+| Command         | Description                                  |
 |-----------------|----------------------------------------------|
-| `make help`     | Näytä kaikki komennot                        |
-| `make dev-up`   | Käynnistä dev-ympäristö                      |
-| `make dev-down` | Pysäytä dev-ympäristö                        |
-| `make dev-fetch`| Aja data-fetcher (hae hintatiedot)           |
-| `make dev-geo`  | Hae postinumerogeometriat kantaan             |
-| `make dev-logs` | Seuraa logeja                                |
-| `make dev-psql` | Avaa psql-shell                              |
-| `make dev-reset`| Tyhjennä dev-kanta ja luo uudelleen          |
-| `make test`     | Aja yksikkötestit (Bun, ei Dockeria)         |
+| `make help`     | Show all commands                            |
+| `make dev-up`   | Start dev environment                        |
+| `make dev-down` | Stop dev environment                         |
+| `make dev-fetch`| Run data fetcher (fetch price data)          |
+| `make dev-geo`  | Fetch postal code geometries into database   |
+| `make dev-logs` | Follow logs                                  |
+| `make dev-psql` | Open psql shell                              |
+| `make dev-reset`| Clear dev database and recreate              |
+| `make test`     | Run unit tests (Bun, no Docker)              |
 
-## Tuotanto
+## Production
 
 ```bash
-# 1. Kopioi ja muokkaa ympäristömuuttujat
+# 1. Copy and edit environment variables
 cp .env.prod.example .env.prod
-# Vaihda POSTGRES_PASSWORD!
+# Change POSTGRES_PASSWORD!
 
-# 2. Käynnistä
+# 2. Start
 make prod-up
 
-# 3. Hae data
+# 3. Fetch data
 make prod-fetch
 ```
 
-Prod-portit oletuksena: API `51000`, frontend `51200`. Muokattavissa `.env.prod`-tiedostossa (`API_PORT`, `FRONTEND_PORT`).
+Prod ports by default: API `51000`, frontend `51200`. Configurable in `.env.prod` (`API_PORT`, `FRONTEND_PORT`).
 
-## Ympäristömuuttujat
+## Environment Variables
 
-| Muuttuja           | Kuvaus                         | Dev oletus         |
-|--------------------|--------------------------------|--------------------|
-| `ENV`              | Ympäristön nimi                | `dev`              |
-| `POSTGRES_DB`      | Tietokannan nimi               | `housing_prices`   |
-| `POSTGRES_USER`    | DB-käyttäjä                    | `hsp`              |
-| `POSTGRES_PASSWORD`| DB-salasana                    | `hsp_dev_password` |
-| `POSTGRES_PORT`    | Postgres-portti hostille       | `5433`             |
-| `API_PORT`         | API-portti hostille            | `51000`            |
-| `FRONTEND_PORT`    | Frontend-portti hostille       | `51100` / `51200`  |
-| `VITE_API_BASE`    | API base URL frontendille      | _(tyhjä = proxy)_  |
-| `LOG_LEVEL`        | Lokitaso                       | `debug` / `info`   |
+| Variable             | Description                    | Dev default        |
+|----------------------|--------------------------------|--------------------|
+| `ENV`                | Environment name               | `dev`              |
+| `POSTGRES_DB`        | Database name                  | `housing_prices`   |
+| `POSTGRES_USER`      | DB user                        | `hsp`              |
+| `POSTGRES_PASSWORD`  | DB password                    | `hsp_dev_password` |
+| `POSTGRES_PORT`      | Postgres port on host          | `5433`             |
+| `API_PORT`           | API port on host               | `51000`            |
+| `FRONTEND_PORT`      | Frontend port on host          | `51100` / `51200`  |
+| `VITE_API_BASE`      | API base URL for frontend      | _(empty = proxy)_  |
+| `LOG_LEVEL`          | Log level                      | `debug` / `info`   |
 
-## Testit
+## Tests
 
 ```bash
 bun test
 ```
 
-## Lisenssi
+## License
 
 MIT
